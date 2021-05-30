@@ -39,17 +39,23 @@ class Veracross(object):
     def __init__(self, config):
         self.rate_limit_remaining = 300
         self.rate_limit_reset = 0
-        self.session = requests.Session()
-        self.config = config
+        self.__session = requests.Session()
 
         if 'school_short_name' in config:
-            self.api_url = 'https://api.veracross.com/{}/v2/'.format(str(config['school_short_name']))
+            self.school_short_name = str(config['school_short_name'))
+            self.api_url = 'https://api.veracross.com/{}/v2/'.format(self.school_short_name)
 
         if 'vcurl' in config:
             self.api_url = config['vcurl']
 
+        if 'vcuser' in config and 'vcpass' in config:
+            self.vcuser = config['vcuser']
+            self.__session.auth = (config['vcuser'], config['vcpass'])
+        else:
+            raise KeyError('Credentials not provided')
+
     def __repr__(self):
-        return "VC API connected to " + str(self.api_url) + " as " + str(self.config["vcuser"])
+        return "VC API connected to " + str(self.api_url) + " as " + str(self.vcuser)
 
     def set_timers(self, limit_remaining, limit_reset):
         """
@@ -63,14 +69,6 @@ class Veracross(object):
         if self.rate_limit_remaining == 1:
             time.sleep(self.rate_limit_reset + 1)
 
-    def set_auth(self):
-        """
-        Ensures auth header is in place.
-        :return: None
-        """
-        if not self.session.auth:
-            self.session.auth = (self.config['vcuser'], self.config['vcpass'])
-
     def pull(self, source, parameters=None):
         """
         Get Veracross Data with pagination
@@ -79,14 +77,15 @@ class Veracross(object):
         :return: records in a list of dictionaries
         """
         try:
-            self.set_auth()
+            if not self.__session.auth:
+                raise RuntimeError("Not connected.")
 
             if parameters is not None:
                 s = self.api_url + source + ".json?" + parse.urlencode(parameters, safe=':-,')
             else:
                 s = self.api_url + source + ".json"
 
-            r = self.session.get(s)
+            r = self.__session.get(s)
 
             if r.status_code == 200:
                 if 'X-Total-Count' in r.headers:
@@ -103,9 +102,9 @@ class Veracross(object):
                     self.set_timers(r.headers['X-Rate-Limit-Remaining'],
                                     r.headers['X-Rate-Limit-Reset'])
                     if parameters is None:
-                        r = self.session.get(s + "?page=" + str(page))
+                        r = self.__session.get(s + "?page=" + str(page))
                     else:
-                        r = self.session.get(s + "&page=" + str(page))
+                        r = self.__session.get(s + "&page=" + str(page))
 
                     records += r.json()
                     page += 1
