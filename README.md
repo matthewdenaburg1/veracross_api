@@ -3,7 +3,20 @@ Provides an easy way to pull information from the Veracross API in Python.
 
 Rate limiting and pagination will be handled automatically.
 
-Usage Example:
+## Install
+
+Clone the package and `cd` into the directory you downloaded to.
+```bash
+git clone https://bitbucket.org/ssfs_tech/veracross_api
+cd /path/to/downloaddirectory
+```
+
+Install the local version to ensure the most recent updates
+```bash
+pip3 install .
+```
+
+## Usage Example:
 ```python
 import veracross_api as v
 
