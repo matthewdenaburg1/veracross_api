@@ -1,12 +1,12 @@
 Metadata-Version: 2.1
 Name: veracross-api
-Version: 1.0.2
+Version: 1.0.3
 Summary: Simple library for interacting with the Veracross API
 Home-page: https://bitbucket.org/ssfs_tech/veracross_api
 Author: Forrest Beck, Matthew Denaburg
 Author-email: forrest.beck@da.org, matthew.denaburg@ssfs.org
 License: MIT License
-Download-URL: https://bitbucket.org/ssfs_tech/veracross_api/get/v1.0.2.tar.gz
+Download-URL: https://bitbucket.org/ssfs_tech/veracross_api/get/v1.0.3.tar.gz
 Description: # Veracross API Python Library
         Provides an easy way to pull information from the Veracross API in Python.
         
