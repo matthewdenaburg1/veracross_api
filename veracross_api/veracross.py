@@ -7,9 +7,10 @@ Rate limiting and pagination will be handled automatically.
 
 Example of usage:
 
-c = {'school_short_name': 'abc',
-        'vcuser': 'username',
-        'vcpass': 'password'
+c = {
+    'school_short_name': 'abc',
+    'vcuser': 'username',
+    'vcpass': 'password'
 }
 
 import veracross_api as v
@@ -37,7 +38,17 @@ __author__ = "Forrest Beck,  Matthew Denaburg"
 
 
 class Veracross:
-    """This class provides an easy interface to the Veracross API for python."""
+    """This singleton class provides an easy interface to the Veracross API"""
+
+    __instance = None
+
+    def __new__(cls, config):
+        """this makes the class a singleton"""
+
+        if Veracross.__instance:
+            return Veracross.__instance
+        super().__init__(config)
+        return Veracross.__instance
 
     def __init__(self, config):
         self.rate_limit_remaining = 300
@@ -56,6 +67,16 @@ class Veracross:
             self.__session.auth = (config['vcuser'], config['vcpass'])
         else:
             raise KeyError('Credentials not provided')
+
+        Veracross.__instance = self
+
+    def __eq__(self, other):
+        if id(self) == id(other):
+            print("id")
+            return True
+        if not isinstance(other, Veracross):
+            return False
+        return self.vcuser == other.vcuser and self.api_url == other.api_url
 
     def __repr__(self):
         return f"VC API connected to {self.api_url} as {self.vcuser}"
