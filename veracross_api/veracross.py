@@ -27,28 +27,41 @@ Returned will be a dictionary of data.
 """
 
 
-from urllib import parse
-import math
+import collections.abc
+import datetime
+import functools
 import time
 
+import dateutil.parser
 import requests
 
 
 __author__ = "Forrest Beck,  Matthew Denaburg"
 
 
+def singleton(cls):
+    """
+    Make a class a Singleton class (only one instance)
+
+    From https://realpython.com/primer-on-python-decorators/#creating-singletons
+    """
+
+    @functools.wraps(cls)
+    def wrapper_singleton(*args, **kwargs):
+        """Wrapper"""
+
+        if not wrapper_singleton.instance:
+            wrapper_singleton.instance = cls(*args, **kwargs)
+
+        return wrapper_singleton.instance
+
+    wrapper_singleton.instance = None
+    return wrapper_singleton
+
+
+@singleton
 class Veracross:
     """This singleton class provides an easy interface to the Veracross API"""
-
-    __instance = None
-
-    def __new__(cls, config):
-        """this makes the class a singleton"""
-
-        if Veracross.__instance:
-            return Veracross.__instance
-        super().__init__(config)
-        return Veracross.__instance
 
     def __init__(self, config):
         self.rate_limit_remaining = 300
@@ -68,8 +81,6 @@ class Veracross:
         else:
             raise KeyError('Credentials not provided')
 
-        Veracross.__instance = self
-
     def __eq__(self, other):
         if id(self) == id(other):
             print("id")
@@ -85,7 +96,8 @@ class Veracross:
         """
         Sets the rate limits
 
-        :param limit_remaining: Count of API calls remaining from header X-Rate-Limit-Remaining
+        :param limit_remaining: Count of API calls remaining from header
+        X-Rate-Limit-Remaining
         :param limit_reset: Reset Timer from header X-Rate-Limit-Reset
         :return: None
 
@@ -95,6 +107,26 @@ class Veracross:
 
         if self.rate_limit_remaining == 1:
             time.sleep(self.rate_limit_reset + 1)
+
+    def _cleanup_parameters(self, parameters):
+        """cleanup parameters"""
+
+        params = {}
+        if not parameters:
+            return params
+
+        for key in parameters:
+            if key == "updated_after":
+                if isinstance(parameters[key], str):
+                    params[key] = dateutil.parser.parse(parameters[key])
+                if isinstance(parameters[key], datetime.date):
+                    params[key] = parameters[key].strftime("%Y-%m-%d")
+            elif isinstance(parameters[key], collections.abc.Iterable):
+                params[key] = ",".join(map(str, parameters[key]))
+            else:
+                params[key] = str(parameters[key])
+
+        return params
 
     def pull(self, source, parameters=None):
         """
@@ -108,33 +140,25 @@ class Veracross:
         if not self.__session.auth:
             raise RuntimeError("Not connected.")
 
-        if parameters is not None:
-            s = f"{self.api_url}{source}.json?" + parse.urlencode(parameters, safe=':-,')
-        else:
-            s = f"{self.api_url}{source}.json"
+        url = f"{self.api_url}{source}.json"
 
-        r = self.__session.get(s)
+        params = self._cleanup_parameters(parameters)
+        response = self.__session.get(url, params=params)
         records = []
 
-        if r.status_code == 200:
-            if 'X-Total-Count' in r.headers:  # if there are multiple pages
-                pages = math.ceil(int(r.headers['X-Total-Count']) / 100)
-            else:  # just return the results
-                self.set_timers(r.headers['X-Rate-Limit-Remaining'],
-                                r.headers['X-Rate-Limit-Reset'])
-                return r.json()
-
+        if response.status_code == 200:
             page = 1
+            pages = 1
 
-            while page <= pages:
-                self.set_timers(r.headers['X-Rate-Limit-Remaining'],
-                                r.headers['X-Rate-Limit-Reset'])
-                if parameters is None:
-                    r = self.__session.get(s + "?page=" + str(page))
-                else:
-                    r = self.__session.get(s + "&page=" + str(page))
+            # if there are multiple pages
+            if 'X-Total-Count' in response.headers:
+                pages = int(response.headers['X-Total-Count']) // 100 + 1
 
-                records += r.json()
+            while page > pages:
+                records += response.json()
                 page += 1
+                self.set_timers(response.headers['X-Rate-Limit-Remaining'],
+                                response.headers['X-Rate-Limit-Reset'])
+                response = self.__session.get(f"{url}?page={page}", params=params)
 
         return records
