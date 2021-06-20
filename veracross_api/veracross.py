@@ -117,10 +117,14 @@ class Veracross:
 
         for key in parameters:
             if key == "updated_after":
+                # if it's a string, try to parse to datetime
                 if isinstance(parameters[key], str):
                     params[key] = dateutil.parser.parse(parameters[key])
+                # if it's a date, convert to the right format.
                 if isinstance(parameters[key], datetime.date):
                     params[key] = parameters[key].strftime("%Y-%m-%d")
+                else:  # if we got here, can't parse, so skip the keyt
+                    pass
             elif isinstance(parameters[key], collections.abc.Iterable):
                 params[key] = ",".join(map(str, parameters[key]))
             else:
@@ -154,7 +158,7 @@ class Veracross:
             if 'X-Total-Count' in response.headers:
                 pages = int(response.headers['X-Total-Count']) // 100 + 1
 
-            while page > pages:
+            while page <= pages:
                 records += response.json()
                 page += 1
                 self.set_timers(response.headers['X-Rate-Limit-Remaining'],
