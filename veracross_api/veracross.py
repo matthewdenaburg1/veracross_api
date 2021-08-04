@@ -31,6 +31,7 @@ import collections.abc
 import datetime
 import functools
 import time
+from urllib import parse
 
 import dateutil.parser
 import requests
@@ -123,7 +124,7 @@ class Veracross:
                 # if it's a date, convert to the right format.
                 if isinstance(parameters[key], datetime.date):
                     params[key] = parameters[key].strftime("%Y-%m-%d")
-                else:  # if we got here, can't parse, so skip the keyt
+                else:  # if we got here, can't parse, so skip the key
                     pass
             elif isinstance(parameters[key], collections.abc.Iterable):
                 params[key] = ",".join(map(str, parameters[key]))
@@ -145,9 +146,10 @@ class Veracross:
             raise RuntimeError("Not connected.")
 
         url = f"{self.api_url}{source}.json"
-
-        params = self._cleanup_parameters(parameters)
+        params = parse.urlencode(self._cleanup_parameters(parameters),
+                                 safe=":-,")
         response = self.__session.get(url, params=params)
+
         records = []
 
         if response.status_code == 200:
@@ -163,6 +165,7 @@ class Veracross:
                 page += 1
                 self.set_timers(response.headers['X-Rate-Limit-Remaining'],
                                 response.headers['X-Rate-Limit-Reset'])
-                response = self.__session.get(f"{url}?page={page}", params=params)
+                response = self.__session.get(f"{url}?page={page}",
+                                              params=params)
 
         return records
