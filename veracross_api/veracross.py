@@ -161,7 +161,7 @@ class Veracross:
                 pages = int(response.headers['X-Total-Count']) // 100 + 1
 
             while page <= pages:
-                records += response.json()
+                records += [response.json()]
                 page += 1
                 self.set_timers(response.headers['X-Rate-Limit-Remaining'],
                                 response.headers['X-Rate-Limit-Reset'])
