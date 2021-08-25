@@ -84,7 +84,6 @@ class Veracross:
 
     def __eq__(self, other):
         if id(self) == id(other):
-            print("id")
             return True
         if not isinstance(other, Veracross):
             return False
@@ -121,6 +120,7 @@ class Veracross:
                 # if it's a string, try to parse to datetime
                 if isinstance(parameters[key], str):
                     params[key] = dateutil.parser.parse(parameters[key])
+
                 # if it's a date, convert to the right format.
                 if isinstance(parameters[key], datetime.date):
                     params[key] = parameters[key].strftime("%Y-%m-%d")
@@ -161,7 +161,14 @@ class Veracross:
                 pages = int(response.headers['X-Total-Count']) // 100 + 1
 
             while page <= pages:
-                records += [response.json()]
+                data = response.json()
+                if isinstance(data, list):
+                    # if there are multiple responses, extend list
+                    records.extend(data)
+                elif isinstance(data, dict):
+                    # otherwise, append single item
+                    records.append(data)
+
                 page += 1
                 self.set_timers(response.headers['X-Rate-Limit-Remaining'],
                                 response.headers['X-Rate-Limit-Reset'])
