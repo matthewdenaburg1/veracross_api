@@ -3,7 +3,7 @@ import setuptools
 from os import path
 
 
-__version__ = '1.1.3'
+__version__ = '1.1.4'
 
 
 this_directory = path.abspath(path.dirname(__file__))
@@ -19,7 +19,7 @@ setup(
     long_description_content_type='text/markdown',
     license='MIT License',
     author='Forrest Beck, Matthew Denaburg',
-    author_email='forrest.beck@da.org, matthew.denaburg@ssfs.org',
+    author_email=['forrest.beck@da.org', 'matthew.denaburg@ssfs.org'],
     url='https://bitbucket.org/ssfs_tech/veracross_api',
     download_url=f'https://bitbucket.org/ssfs_tech/veracross_api/get/v{__version__}.tar.gz',
     keywords=['Veracross', 'API'],
